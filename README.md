@@ -5,12 +5,12 @@ This guide provides a **step-by-step implementation** of making an API request u
 ---
 
 ## 📌 Steps Overview:
-1. **Define the Request Model**
-2. **Define the Response Model**
-3. **Add a New Method in Retrofit API Client**
-4. **Implement the Method in DataManager**
-5. **Implement the Bloc to Manage API Calls**
-6. **Call the API from the UI**
+1. Define the Request Model
+2. Define the Response Model
+3. Add a New Method in Retrofit API Client
+4. Implement the Method in DataManager
+5. Implement the Bloc to Manage API Calls
+6. Call the API from the UI
 
 ---
 
@@ -380,10 +380,10 @@ Future<void> bookJourneyRequest() async {
 }
 ```
 ### 🎯 Summary
-1. **✔ Created a request body model (BookJourneyBody.dart)**
-2. **✔ Used json_serializable for easy JSON conversion**
-3. **✔ Defined Retrofit API call in NetworkApiClient.dart**
-4. **✔ Created and tested the API request in bookJourneyRequest()**
+1. ✔ Created a request body model (BookJourneyBody.dart)
+2. ✔ Used json_serializable for easy JSON conversion
+3. ✔ Defined Retrofit API call in NetworkApiClient.dart
+4. ✔ Created and tested the API request in bookJourneyRequest()
 
 Now your Flutter app can send a booking request successfully! 🚀
 
