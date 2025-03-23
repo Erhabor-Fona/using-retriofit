@@ -388,6 +388,227 @@ Future<void> bookJourneyRequest() async {
 Now your Flutter app can send a booking request successfully! 🚀
 
 
+## 📌 Making a GET Request Using Retrofit in Flutter (Dio)
+If you're making a GET request that doesn't have a body, you'll follow these steps:
+
+## 1️⃣ Add Dependencies
+Ensure you have dio and retrofit in your ```pubspec.yaml```:
+```yaml
+dependencies:
+  dio: ^5.4.1
+  retrofit: ^4.1.0
+  json_annotation: ^4.8.1
+
+dev_dependencies:
+  retrofit_generator: ^7.0.8
+  build_runner: ^2.4.6
+```
+Then run:
+```sh
+flutter pub get
+```
+## 2️⃣ Create the Response Model
+Since the API returns JSON, we need to map it to a Dart model.
+Let's say our API returns a list of users, like this:
+```json
+{
+  "status": "success",
+  "message": "Users retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john.doe@example.com"
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com"
+    }
+  ]
+}
+```
+Create ```UserResponse.dart```
+```dart
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'user_response.g.dart';
+part 'user_response.freezed.dart';
+
+@freezed
+class UserResponse with _$UserResponse {
+  const factory UserResponse({
+    required String status,
+    required String message,
+    required List<User> data,
+  }) = _UserResponse;
+
+  factory UserResponse.fromJson(Map<String, dynamic> json) =>
+      _$UserResponseFromJson(json);
+}
+
+@freezed
+class User with _$User {
+  const factory User({
+    required int id,
+    required String name,
+    required String email,
+  }) = _User;
+
+  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+}
+```
+Then run:
+```sh
+flutter pub run build_runner build --delete-conflicting-outputs
+```
+## 3️⃣ Define the Retrofit API Client
+Now, create the API interface for Retrofit.
+
+Create ```NetworkApiClient.dart```
+```dart
+import 'package:dio/dio.dart';
+import 'package:retrofit/retrofit.dart';
+import '../model/response/user_response.dart';
+
+part 'network_api_client.g.dart';
+
+@RestApi(baseUrl: "https://api.example.com/v1/")
+abstract class NetworkApiClient {
+  factory NetworkApiClient(Dio dio, {String baseUrl}) = _NetworkApiClient;
+
+  @GET("users") // 👈 This is a GET request without a body
+  Future<UserResponse> getUsers();
+}
+```
+Then run:
+```sh
+flutter pub run build_runner build --delete-conflicting-outputs
+```
+## 4️⃣ Implement the API Call in DataManager
+We use DataManager to handle network requests in a structured way.
+
+Modify ```DataManager.dart```
+```dart
+import '../dataProvider/model/response/user_response.dart';
+import '../network/network_api_client.dart';
+
+class DataManager {
+  final NetworkApiClient _apiClient;
+
+  DataManager({required NetworkApiClient apiClient}) : _apiClient = apiClient;
+
+  Future<UserResponse> fetchUsers() async {
+    try {
+      return await _apiClient.getUsers();
+    } catch (e) {
+      throw Exception("Failed to fetch users: $e");
+    }
+  }
+}
+```
+## 5️⃣ Create a Bloc for State Management (Optional)
+To manage state efficiently, let's use Cubit.
+
+Create ```user_cubit.dart```
+```dart
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../dataProvider/model/response/user_response.dart';
+import '../../dataManager/data_manager.dart';
+
+abstract class UserState {}
+
+class UserInitial extends UserState {}
+class UserLoading extends UserState {}
+class UserLoaded extends UserState {
+  final UserResponse response;
+  UserLoaded(this.response);
+}
+class UserError extends UserState {
+  final String message;
+  UserError(this.message);
+}
+
+class UserCubit extends Cubit<UserState> {
+  final DataManager _dataManager;
+
+  UserCubit(this._dataManager) : super(UserInitial());
+
+  Future<void> loadUsers() async {
+    emit(UserLoading());
+    try {
+      final response = await _dataManager.fetchUsers();
+      emit(UserLoaded(response));
+    } catch (e) {
+      emit(UserError("Failed to load users"));
+    }
+  }
+}
+```
+## 6️⃣ Call the API from the UI
+Finally, let's call the API and display the data.
+
+Modify ```UserScreen.dart```
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/user_cubit.dart';
+
+class UserScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Users List")),
+      body: BlocConsumer<UserCubit, UserState>(
+        listener: (context, state) {
+          if (state is UserError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is UserLoading) {
+            return Center(child: CircularProgressIndicator());
+          } else if (state is UserLoaded) {
+            return ListView.builder(
+              itemCount: state.response.data.length,
+              itemBuilder: (context, index) {
+                final user = state.response.data[index];
+                return ListTile(
+                  title: Text(user.name),
+                  subtitle: Text(user.email),
+                );
+              },
+            );
+          }
+          return Center(
+            child: ElevatedButton(
+              onPressed: () {
+                context.read<UserCubit>().loadUsers();
+              },
+              child: Text("Load Users"),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+```
+## 7️⃣ Run and Test
+Start your app and navigate to UserScreen. Press the Load Users button, and you should see the list appear. 🚀
+## 🔁 Full Flow Recap
+1. User taps "Load Users" button
+2.  UI triggers ```UserCubit.loadUsers()```
+3.  Cubit calls ```DataManager.fetchUsers()```
+4.  DataManager calls ```NetworkApiClient.getUsers()```
+5.  Retrofit (Dio) sends a ```GET``` request
+6.  API responds with user data
+7.  Cubit updates the UI with ```UserLoaded``` state
+8.  UI displays the list of users
+
+
 
 
 
