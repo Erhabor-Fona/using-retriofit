@@ -608,6 +608,72 @@ Start your app and navigate to UserScreen. Press the Load Users button, and you 
 7.  Cubit updates the UI with ```UserLoaded``` state
 8.  UI displays the list of users
 
+If you want to make a GET request that takes a parameter, you can modify your Retrofit API definition to include a query parameter or a path parameter.
+
+## 1️⃣ Using Query Parameters (Recommended for Optional Params)
+If the API expects optional parameters (e.g., ```?currency=GHS```), modify your Retrofit definition like this:
+```dart
+@GET("account")
+Future<MerchantDetailsResponse> getMerchantDetails(
+  @Query("currency") String currency,
+);
+```
+#### 📝 Example Call:
+```dart
+final response = await apiClient.getMerchantDetails("GHS");
+```
+✅ Resulting URL:
+```nginx
+GET https://paybox.com.co/account?currency=GHS
+```
+## 2️⃣ Using Path Parameters (For Required Params)
+If the API expects a dynamic path segment like:
+```nginx
+GET https://paybox.com.co/account/GHS
+```
+Modify your method like this:
+```dart
+@GET("account/{currency}")
+Future<MerchantDetailsResponse> getMerchantDetails(
+  @Path("currency") String currency,
+);
+```
+📝 Example Call:
+
+```dart
+final response = await apiClient.getMerchantDetails("GHS");
+```
+✅ Resulting URL:
+```nginx
+GET https://paybox.com.co/account/GHS
+```
+## 3️⃣ Using Both Query and Path Parameters
+If your API needs both:
+Modify the method:
+```dart
+@GET("account/{currency}")
+Future<MerchantDetailsResponse> getMerchantDetails(
+  @Path("currency") String currency,
+  @Query("include_fees") bool includeFees,
+);
+```
+📝 Example Call:
+```dart
+final response = await apiClient.getMerchantDetails("GHS", true);
+```
+✅ Resulting URL:
+```dart
+GET https://paybox.com.co/account/GHS?include_fees=true
+```
+## Final Thoughts
+1. Use ```@Query``` for optional parameters (```?key=value```).
+
+2. Use ```@Path``` for required parameters (```/value``` in the URL).
+
+3. Use both if needed (```/value?key=value```).
+
+
+
 
 
 
